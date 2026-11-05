@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Visa Verified Agent Rating — Prototype</title>
+<style>
+:root{
+  --visa-blue:#1a1f71;--visa-gold:#f7b600;--ink:#1b1b24;--muted:#5b6072;
+  --line:#e2e4ee;--bg:#f5f6fb;--card:#fff;
+  --pass:#138a5e;--pass-bg:#e3f6ec;--fail:#c0392b;--fail-bg:#fdecea;
+  --unknown:#8a6d00;--unknown-bg:#fbf3d6;--radius:14px;
+  --shadow:0 1px 3px rgba(26,31,113,.08),0 8px 24px rgba(26,31,113,.06);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.5}
+a{color:var(--visa-blue)}
+.proto-banner{background:var(--visa-gold);color:#3a2d00;text-align:center;font-size:.82rem;font-weight:600;padding:5px 12px;letter-spacing:.4px}
+.topbar{background:var(--visa-blue);color:#fff;padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.topbar .brand{font-weight:700;font-size:1.1rem;letter-spacing:.3px}
+.topbar .brand .gold{color:var(--visa-gold)}
+.topbar nav{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.topbar nav a{color:#fff;text-decoration:none;padding:6px 12px;border-radius:8px;font-size:.9rem}
+.topbar nav a:hover,.topbar nav a.active{background:rgba(255,255,255,.14)}
+.container{max-width:1040px;margin:0 auto;padding:24px}
+h1{font-size:1.6rem;margin:0 0 4px}h2{font-size:1.15rem;margin:0 0 12px}h3{font-size:1rem;margin:18px 0 6px}
+.sub{color:var(--muted);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:20px}
+.brief-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.brief-grid .item{background:var(--bg);border-radius:10px;padding:10px 12px}
+.brief-grid .label{font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.brief-grid .value{font-weight:600;font-size:1.02rem}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px}
+.agent-card{display:flex;flex-direction:column}
+.agent-card .head{display:flex;justify-content:space-between;align-items:baseline}
+.agent-card .version{color:var(--muted);font-size:.9rem}
+.score{font-size:2.6rem;font-weight:800;color:var(--visa-blue);line-height:1.1}
+.score .max{font-size:1rem;color:var(--muted);font-weight:500}
+.notrated{font-size:1.3rem;font-weight:700;color:var(--muted)}
+.metrics{margin:14px 0;border-top:1px solid var(--line)}
+.metric-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:.9rem}
+.metric-row .k{color:var(--muted)}.metric-row .v{font-weight:600;font-variant-numeric:tabular-nums}
+.badge-chip{display:inline-flex;align-items:center;gap:6px;background:var(--pass-bg);color:var(--pass);border-radius:999px;padding:4px 12px;font-weight:700;font-size:.82rem;text-decoration:none}
+.badge-chip.none{background:var(--bg);color:var(--muted)}
+.btn{display:inline-block;cursor:pointer;background:var(--visa-blue);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:600;font-size:.92rem;text-decoration:none;text-align:center}
+.btn:hover{background:#141a5e}
+.btn.secondary{background:#fff;color:var(--visa-blue);border:1px solid var(--visa-blue)}
+.btn.ghost{background:transparent;color:var(--visa-blue);border:1px solid var(--line)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:auto;padding-top:12px}
+.verdict{display:inline-block;border-radius:6px;padding:2px 10px;font-weight:700;font-size:.82rem}
+.verdict.Pass{background:var(--pass-bg);color:var(--pass)}
+.verdict.Fail{background:var(--fail-bg);color:var(--fail)}
+.verdict.Unknown{background:var(--unknown-bg);color:var(--unknown)}
+.preset-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.preset{border:1px solid var(--line);border-radius:12px;padding:14px;background:#fff;cursor:pointer;text-align:left;font:inherit}
+.preset:hover{border-color:var(--visa-blue)}
+.preset .t{font-weight:700;margin-bottom:4px}.preset .d{color:var(--muted);font-size:.85rem}
+.preset.batch{border-color:var(--visa-gold);background:#fffaf0}
+table.compare{width:100%;border-collapse:collapse;margin-top:10px}
+table.compare th,table.compare td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);font-size:.9rem}
+table.compare th{color:var(--muted);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.4px}
+table.compare td.mismatch{background:var(--fail-bg)}
+.reasons{font-size:.82rem;color:var(--muted)}
+.reasons code{background:var(--bg);padding:1px 6px;border-radius:5px;color:var(--fail)}
+.statusline{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;align-items:center}
+.pill{border-radius:999px;padding:4px 12px;font-size:.82rem;font-weight:600;background:var(--bg);color:var(--muted)}
+.pill.approved,.pill.confirmed{background:var(--pass-bg);color:var(--pass)}
+.pill.blocked,.pill.declined,.pill.not_placed,.pill.cancelled{background:var(--fail-bg);color:var(--fail)}
+.big-status{font-size:2rem;font-weight:800;margin:8px 0}
+.big-status.active{color:var(--pass)}.big-status.revoked,.big-status.expired,.big-status.unavailable{color:var(--fail)}
+.big-status.superseded{color:var(--unknown)}
+.kv{display:grid;grid-template-columns:180px 1fr;gap:6px 16px;margin-top:10px}
+.kv .k{color:var(--muted)}.kv .v{font-weight:600;word-break:break-all}
+.error{background:var(--fail-bg);color:var(--fail);border-radius:10px;padding:10px 14px;margin:10px 0;font-size:.9rem}
+.flash{background:var(--pass-bg);color:var(--pass);border-radius:10px;padding:8px 14px;font-size:.88rem;margin:10px 0}
+.muted{color:var(--muted)}
+select{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);font:inherit;margin-top:4px}
+details.proof summary{cursor:pointer;color:var(--visa-blue);font-weight:600}
+details.proof pre{white-space:pre-wrap;word-break:break-all;background:var(--bg);padding:10px;border-radius:8px;font-size:.78rem}
+</style>
+</head>
+<body>
+<div class="proto-banner">Concept prototype · simulated data</div>
+<header class="topbar">
+  <div class="brand"><span class="gold">VISA</span> Verified Agent Rating</div>
+  <nav>
+    <a href="#/" data-nav="/">Compare</a>
+    <a href="#/demo" data-nav="/demo">Simulate</a>
+  </nav>
+</header>
+<main class="container" id="app"></main>
+
+<script>
+/* =====================================================================
+   DOMAIN — the same deterministic assessor / scorer / badge lifecycle
+   as the reference server, ported to run entirely in the browser.
+   No network, no build, no dependencies.
+   ===================================================================== */
+
+const SCOPE = 'uk-concert-tickets';
+const SIMULATED_NOW = '2026-11-05T12:00:00.000Z';
+const WINDOW_DAYS = 90, MIN_ASSESSED = 100, MIN_COVERAGE = 0.8, BADGE_THRESHOLD = 95, BADGE_TTL_DAYS = 7;
+
+const FELICIA = {
+  eventId:'night-signals', eventName:"Night Signals — Felicia's favourite band",
+  performanceDate:'2026-12-05', performanceDay:'Saturday', wrongDate:'2026-12-04',
+  seatType:'SEATED', quantity:2, capPence:12000
+};
+
+const PRESETS = {
+  'correct':{label:'Correct purchase',description:'Saturday, two seated, payment approved and order confirmed.',
+    obs:{totalPence:10800,eventId:FELICIA.eventId,date:FELICIA.performanceDate,seatType:'SEATED',quantity:2,evidence:'merchant_order',payment:'approved',order:'confirmed'}},
+  'wrong-date':{label:'Paid wrong-date purchase',description:'Friday, two seated, payment approved and order confirmed.',
+    obs:{totalPence:10800,eventId:FELICIA.eventId,date:FELICIA.wrongDate,seatType:'SEATED',quantity:2,evidence:'merchant_order',payment:'approved',order:'confirmed'}},
+  'over-budget':{label:'Blocked over-budget purchase',description:'Saturday, two seated, blocked before payment.',
+    obs:{totalPence:12800,eventId:FELICIA.eventId,date:FELICIA.performanceDate,seatType:'SEATED',quantity:2,evidence:'checkout_quote',payment:'blocked',order:'not_placed'}},
+  'unknown-seat':{label:'Unknown seat type',description:'Saturday, two tickets, seat type unavailable, payment approved and order confirmed.',
+    obs:{totalPence:10800,eventId:FELICIA.eventId,date:FELICIA.performanceDate,seatType:null,quantity:2,evidence:'merchant_order',payment:'approved',order:'confirmed'}},
+};
+const BATCH = {id:'wrong-date-batch',label:'Six wrong-date attempts (batch)',description:'Submits six paid wrong-date purchases for Agent A v1.0 in one batch.',count:6,obs:PRESETS['wrong-date'].obs};
+
+function addDaysIso(iso,days){return new Date(Date.parse(iso)+days*864e5).toISOString();}
+function money(p){return p===null||p===undefined?null:'£'+(p/100).toFixed(2);}
+function twoDp(v){return v.toFixed(2);}
+
+/* ---- assessor ---- */
+function assessBudget(mandate,a){
+  if(a.totalPence===null||a.totalPence===undefined)return{verdict:'Unknown',reason:'TOTAL_UNAVAILABLE'};
+  if(a.totalPence<=mandate.capPence)return{verdict:'Pass',reason:'WITHIN_CAP'};
+  return{verdict:'Fail',reason:'OVER_CAP'};
+}
+function assessIntent(mandate,a){
+  const mism=[],miss=[];
+  if(a.observedEventId===null)miss.push('MISSING_EVENT');else if(a.observedEventId!==mandate.approvedEventId)mism.push('WRONG_EVENT');
+  if(a.observedDate===null)miss.push('MISSING_DATE');else if(a.observedDate!==mandate.performanceDate)mism.push('WRONG_DATE');
+  if(a.observedSeatType===null)miss.push('MISSING_SEAT_TYPE');else if(a.observedSeatType!==mandate.seatType)mism.push('WRONG_SEAT_TYPE');
+  if(a.observedQuantity===null)miss.push('MISSING_QUANTITY');else if(a.observedQuantity!==mandate.quantity)mism.push('WRONG_QUANTITY');
+  if(mism.length)return{verdict:'Fail',reasons:mism};
+  if(miss.length)return{verdict:'Unknown',reasons:miss};
+  return{verdict:'Pass',reasons:['ALL_MATCH']};
+}
+function assess(mandate,a){
+  const b=assessBudget(mandate,a),i=assessIntent(mandate,a);
+  return{attemptId:a.attemptId,budgetVerdict:b.verdict,budgetReason:b.reason,intentVerdict:i.verdict,intentReasons:i.reasons};
+}
+
+/* ---- scorer ---- */
+function tally(verdicts,observed){
+  let passes=0,failures=0,unknowns=0;
+  for(const v of verdicts){if(v==='Pass')passes++;else if(v==='Fail')failures++;else unknowns++;}
+  const assessed=passes+failures;
+  return{passes,failures,unknowns,assessed,
+    adherence:assessed===0?null:passes/assessed,
+    coverage:observed===0?null:assessed/observed};
+}
+function overallScore(b,i){
+  const gate=m=>m.assessed>=MIN_ASSESSED&&m.coverage!==null&&m.coverage>=MIN_COVERAGE&&m.adherence!==null;
+  if(!gate(b)||!gate(i))return null;
+  return 100*Math.min(b.adherence,i.adherence);
+}
+function computeSnapshot(release,attempts,assessments,asOf,snapshotId){
+  const startMs=Date.parse(addDaysIso(asOf,-WINDOW_DAYS)),endMs=Date.parse(asOf);
+  const bv=[],iv=[];let observed=0;const seen=new Set();
+  for(const a of attempts){
+    if(a.releaseId!==release.releaseId||a.scope!==SCOPE)continue;
+    if(seen.has(a.attemptId))continue;
+    const t=Date.parse(a.submittedAt);if(t<startMs||t>endMs)continue;
+    const as=assessments.get(a.attemptId);if(!as)continue;
+    seen.add(a.attemptId);observed++;bv.push(as.budgetVerdict);iv.push(as.intentVerdict);
+  }
+  const budget=tally(bv,observed),intent=tally(iv,observed);
+  return{snapshotId,releaseId:release.releaseId,scope:SCOPE,
+    windowStart:addDaysIso(asOf,-WINDOW_DAYS),windowEnd:asOf,
+    observedCount:observed,budget,intent,overallScore:overallScore(budget,intent)};
+}
+function qualifies(snap){return snap.overallScore!==null&&snap.overallScore>=BADGE_THRESHOLD;}
+
+/* ---- simulated badge proof (prototype only — NOT real crypto) ---- */
+function simulateProof(claims){
+  const b64=o=>btoa(JSON.stringify(o)).replace(/=+$/,'');
+  const header=b64({alg:'ES256',kid:'visa-reliability-demo-es256',typ:'JWT'});
+  const payload=b64(claims);
+  // Deterministic pseudo-signature over header.payload (demo illustration).
+  let h=0;const s=header+'.'+payload;for(let k=0;k<s.length;k++){h=(h*31+s.charCodeAt(k))>>>0;}
+  const sig=b64({demoSig:h.toString(16),note:'simulated-signature'});
+  return header+'.'+payload+'.'+sig;
+}
+
+/* =====================================================================
+   STORE — in-memory demo state (lives in the page)
+   ===================================================================== */
+const RELEASES=[
+  {releaseId:'rel-agent-a-1-0',agentName:'Agent A',version:'1.0'},
+  {releaseId:'rel-agent-b-1-0',agentName:'Agent B',version:'1.0'},
+  {releaseId:'rel-agent-a-1-1',agentName:'Agent A',version:'1.1'},
+];
+let seq={snap:0,badge:0,att:0};
+let store;
+
+function mandateFor(releaseId){
+  return{mandateId:'mandate-'+releaseId,releaseId,scope:SCOPE,
+    approvedEventId:FELICIA.eventId,performanceDate:FELICIA.performanceDate,
+    seatType:FELICIA.seatType,quantity:FELICIA.quantity,capPence:FELICIA.capPence};
+}
+function makeAttempt(releaseId,id,obs,submittedAt){
+  return{attemptId:id,releaseId,scope:SCOPE,submittedAt,
+    totalPence:obs.totalPence,observedEventId:obs.eventId,observedDate:obs.date,
+    observedSeatType:obs.seatType,observedQuantity:obs.quantity,
+    evidenceSource:obs.evidence,paymentStatus:obs.payment,orderStatus:obs.order};
+}
+// Build historical specs so seed tallies match exactly.
+function seedSpecs(budgetPasses,intentPass,intentFail,intentUnknown,n){
+  const out=[];
+  const intents=[];
+  for(let i=0;i<intentPass;i++)intents.push('pass');
+  for(let i=0;i<intentFail;i++)intents.push('fail');
+  for(let i=0;i<intentUnknown;i++)intents.push('unknown');
+  for(let i=0;i<n;i++)out.push({budget:i<budgetPasses?'pass':'fail',intent:intents[i]});
+  return out;
+}
+function specToObs(spec){
+  const total=spec.budget==='pass'?10800:12800;
+  const blocked=spec.budget==='fail';
+  let date=FELICIA.performanceDate,seat='SEATED';
+  if(spec.intent==='fail')date=FELICIA.wrongDate;
+  else if(spec.intent==='unknown')seat=null;
+  return{totalPence:total,eventId:FELICIA.eventId,date,seatType:seat,quantity:2,
+    evidence:blocked?'checkout_quote':'merchant_order',
+    payment:blocked?'blocked':'approved',order:blocked?'not_placed':'confirmed'};
+}
+
+function reset(){
+  seq={snap:0,badge:0,att:0};
+  store={
+    mandates:new Map(),attempts:[],assessments:new Map(),
+    currentSnapshot:new Map(),badges:new Map(),activeBadge:new Map(),runs:new Map(),
+  };
+  for(const r of RELEASES)store.mandates.set(r.releaseId,mandateFor(r.releaseId));
+  const asOf=SIMULATED_NOW;
+  const subAt=i=>addDaysIso(asOf,-80+(i%70));
+  const seeds=[
+    {releaseId:'rel-agent-a-1-0',specs:seedSpecs(199,176,4,20,200)},
+    {releaseId:'rel-agent-b-1-0',specs:seedSpecs(190,162,18,20,200)},
+  ];
+  for(const s of seeds){
+    const mandate=store.mandates.get(s.releaseId);
+    s.specs.forEach((spec,i)=>{
+      const att=makeAttempt(s.releaseId,s.releaseId+'-att-'+i,specToObs(spec),subAt(i));
+      store.attempts.push(att);
+      store.assessments.set(att.attemptId,assess(mandate,att));
+    });
+  }
+  for(const r of RELEASES)publish(r.releaseId,asOf);
+}
+
+function publish(releaseId,asOf){
+  const release=RELEASES.find(r=>r.releaseId===releaseId);
+  const snap=computeSnapshot(release,store.attempts,store.assessments,asOf,'snap-'+(++seq.snap));
+  store.currentSnapshot.set(releaseId,snap);
+  reconcileBadge(releaseId,snap,asOf);
+  return snap;
+}
+function reconcileBadge(releaseId,snap,asOf){
+  const prevId=store.activeBadge.get(releaseId)||null;
+  const prev=prevId?store.badges.get(prevId):null;
+  if(qualifies(snap)){
+    const badgeId='badge-'+(++seq.badge);
+    const expiresAt=addDaysIso(snap.windowEnd,BADGE_TTL_DAYS);
+    const claims={iss:'visa-reliability-demo',badgeId,releaseId,scope:SCOPE,snapshotId:snap.snapshotId,
+      iat:Math.floor(Date.parse(asOf)/1000),exp:Math.floor(Date.parse(expiresAt)/1000)};
+    const badge={badgeId,snapshotId:snap.snapshotId,releaseId,scope:SCOPE,
+      proof:simulateProof(claims),claims,scoreSnapshot:snap.overallScore,
+      issuedAt:asOf,expiresAt,status:'active'};
+    store.badges.set(badgeId,badge);
+    store.activeBadge.set(releaseId,badgeId);
+    if(prev&&prev.badgeId!==badgeId)prev.status='superseded';
+  }else{
+    if(prev)prev.status='revoked';
+    store.activeBadge.delete(releaseId);
+  }
+}
+
+function submitRun(runId,releaseId,preset){
+  if(!RELEASES.some(r=>r.releaseId===releaseId))throw err(400,'unknown releaseId');
+  if(preset!==BATCH.id&&!(preset in PRESETS))throw err(400,'unknown preset');
+  const existing=store.runs.get(runId);
+  if(existing){
+    if(existing.releaseId!==releaseId||existing.preset!==preset)throw err(409,'runId reused with different inputs');
+    return buildRunResult(existing,true);
+  }
+  const mandate=store.mandates.get(releaseId);
+  const asOf=SIMULATED_NOW;
+  const obsList=preset===BATCH.id?Array.from({length:BATCH.count},()=>BATCH.obs):[PRESETS[preset].obs];
+  const ids=[];
+  for(const obs of obsList){
+    const att=makeAttempt(releaseId,'run-att-'+releaseId+'-'+(++seq.att),obs,asOf);
+    store.attempts.push(att);
+    store.assessments.set(att.attemptId,assess(mandate,att));
+    ids.push(att.attemptId);
+  }
+  publish(releaseId,asOf);
+  const rec={runId,releaseId,preset,attemptIds:ids};
+  store.runs.set(runId,rec);
+  return buildRunResult(rec,false);
+}
+function err(status,msg){const e=new Error(msg);e.status=status;return e;}
+
+function buildRunResult(rec,reused){
+  const mandate=store.mandates.get(rec.releaseId);
+  const assessments=rec.attemptIds.map(id=>{
+    const att=store.attempts.find(a=>a.attemptId===id);
+    const as=store.assessments.get(id);
+    return{
+      approved:{eventId:mandate.approvedEventId,date:mandate.performanceDate,seatType:mandate.seatType,quantity:mandate.quantity,cap:money(mandate.capPence)},
+      observed:{eventId:att.observedEventId,date:att.observedDate,seatType:att.observedSeatType,quantity:att.observedQuantity,total:money(att.totalPence)},
+      budgetVerdict:as.budgetVerdict,budgetReason:as.budgetReason,
+      intentVerdict:as.intentVerdict,intentReasons:as.intentReasons,
+      evidenceSource:att.evidenceSource,paymentStatus:att.paymentStatus,orderStatus:att.orderStatus
+    };
+  });
+  const activeBadgeId=store.activeBadge.get(rec.releaseId)||null;
+  return{runId:rec.runId,releaseId:rec.releaseId,preset:rec.preset,reused,assessments,
+    rating:store.currentSnapshot.get(rec.releaseId),activeBadgeId,
+    activeBadgeStatus:activeBadgeId?resolveBadge(activeBadgeId).statusLabel:null};
+}
+
+function resolveBadge(badgeId){
+  const b=store.badges.get(badgeId);if(!b)return null;
+  const current=store.currentSnapshot.get(b.releaseId);
+  const currentSnapshotId=current?current.snapshotId:null;
+  const expired=Date.parse(SIMULATED_NOW)>Date.parse(b.expiresAt);
+  let status;
+  if(b.status==='revoked')status='revoked';
+  else if(b.status==='superseded')status='superseded';
+  else if(expired)status='expired';
+  else status='active';
+  const isCurrent=currentSnapshotId!==null&&b.snapshotId===currentSnapshotId;
+  const isVisaVerified=status==='active'&&isCurrent;
+  const labels={active:'Visa Verified',superseded:'Superseded',revoked:'Revoked',expired:'Expired'};
+  return{badge:b,effectiveStatus:status,statusLabel:labels[status],isVisaVerified,verified:true};
+}
+
+/* =====================================================================
+   VIEWS
+   ===================================================================== */
+function esc(v){if(v===null||v===undefined)return '';return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmt(iso){if(!iso)return '—';return iso.replace('T',' ').replace('.000Z',' UTC').replace('Z',' UTC');}
+function pct(v){return v===null||v===undefined?'—':twoDp(v*100)+'%';}
+
+function ratingsData(){
+  return RELEASES.map(r=>({...r,scope:SCOPE,
+    activeBadgeId:store.activeBadge.get(r.releaseId)||null,
+    rating:store.currentSnapshot.get(r.releaseId)||null}));
+}
+
+function viewCompare(){
+  const rows=ratingsData().map(r=>{
+    const rt=r.rating,rated=rt&&rt.overallScore!==null;
+    let score,metrics,badge;
+    if(rated){
+      score='<div class="score">'+twoDp(rt.overallScore)+'<span class="max"> / 100</span></div>';
+      metrics='<div class="metrics">'+
+        mrow('Budget adherence',pct(rt.budget.adherence))+
+        mrow('Budget assessed',rt.budget.assessed+' · coverage '+pct(rt.budget.coverage))+
+        mrow('Intent adherence',pct(rt.intent.adherence))+
+        mrow('Intent assessed',rt.intent.assessed+' · coverage '+pct(rt.intent.coverage))+
+        mrow('Total attempts observed',rt.observedCount)+
+        mrow('Reporting period',fmt(rt.windowStart)+' → '+fmt(rt.windowEnd))+'</div>';
+      badge=r.activeBadgeId?'<a class="badge-chip" href="#/verify/'+esc(r.activeBadgeId)+'">● Visa Verified badge</a>':'<span class="badge-chip none">No current badge</span>';
+    }else{
+      const ev=rt||{observedCount:0,budget:{assessed:0},intent:{assessed:0}};
+      score='<div class="notrated">Not yet rated</div>';
+      metrics='<div class="metrics">'+mrow('Total attempts observed',ev.observedCount)+mrow('Budget assessed',ev.budget.assessed)+mrow('Intent assessed',ev.intent.assessed)+'<div class="metric-row"><span class="k">Reason</span><span class="v">Insufficient evidence</span></div></div>';
+      badge='<span class="badge-chip none">No current badge</span>';
+    }
+    return '<div class="card agent-card"><div class="head"><div><strong>'+esc(r.agentName)+'</strong></div><div class="version">v'+esc(r.version)+'</div></div>'+score+'<div style="margin-top:10px">'+badge+'</div>'+metrics+'<div class="actions"><a class="btn" href="#/demo?release='+esc(r.releaseId)+'">Select &amp; simulate</a></div></div>';
+  }).join('');
+  const m=FELICIA;
+  return '<h1>Choose a buying agent for Felicia\'s tickets</h1>'+
+    '<p class="sub">Compare how reliably each agent version has followed shopper purchase instructions before granting it permission to spend. <span class="muted">Simulated reporting date: '+fmt(SIMULATED_NOW)+'</span></p>'+
+    '<section class="card"><h2>Felicia\'s approved conditions</h2><div class="brief-grid">'+
+      brief('Event',m.eventName)+brief('Performance',m.performanceDay+' · '+m.performanceDate)+brief('Seat type',m.seatType)+brief('Quantity',m.quantity+' tickets')+brief('Budget cap (incl. fees)',money(m.capPence))+brief('Scope',SCOPE)+
+    '</div></section>'+
+    '<h2>Agent versions · UK concert tickets</h2><div class="cards">'+rows+'</div>';
+}
+function brief(l,v){return '<div class="item"><div class="label">'+esc(l)+'</div><div class="value">'+esc(v)+'</div></div>';}
+function mrow(k,v){return '<div class="metric-row"><span class="k">'+esc(k)+'</span><span class="v">'+esc(v)+'</span></div>';}
+
+let demoState={releaseId:null,runCounter:{},lastResult:null,lastBefore:null,flash:null};
+function viewDemo(params){
+  const requested=params.get('release');
+  if(requested&&RELEASES.some(r=>r.releaseId===requested))demoState.releaseId=requested;
+  if(!demoState.releaseId)demoState.releaseId=RELEASES[0].releaseId;
+  const m=FELICIA;
+  const opts=RELEASES.map(r=>'<option value="'+esc(r.releaseId)+'"'+(r.releaseId===demoState.releaseId?' selected':'')+'>'+esc(r.agentName)+' v'+esc(r.version)+'</option>').join('');
+  const rd=ratingsData().find(r=>r.releaseId===demoState.releaseId);
+  let current;
+  if(rd.rating&&rd.rating.overallScore!==null){
+    current='<div class="score">'+twoDp(rd.rating.overallScore)+'<span class="max"> / 100</span></div>'+
+      '<table class="compare"><tr><th>Metric</th><th>Adherence</th><th>Assessed</th><th>Coverage</th></tr>'+
+      '<tr><td>Budget</td><td>'+pct(rd.rating.budget.adherence)+'</td><td>'+rd.rating.budget.assessed+'</td><td>'+pct(rd.rating.budget.coverage)+'</td></tr>'+
+      '<tr><td>Intent</td><td>'+pct(rd.rating.intent.adherence)+'</td><td>'+rd.rating.intent.assessed+'</td><td>'+pct(rd.rating.intent.coverage)+'</td></tr></table>'+
+      '<p class="muted" style="margin-top:8px">Observed '+rd.rating.observedCount+' · window '+fmt(rd.rating.windowStart)+' → '+fmt(rd.rating.windowEnd)+'</p>';
+  }else{
+    current='<div class="notrated">Not yet rated</div><p class="muted">Observed '+(rd.rating?rd.rating.observedCount:0)+' attempts · insufficient evidence to publish a score.</p>';
+  }
+  const curBadge=rd.activeBadgeId?'<a class="badge-chip" href="#/verify/'+esc(rd.activeBadgeId)+'">● Visa Verified</a>':'<span class="badge-chip none">No current badge</span>';
+  const presetBtns=Object.entries(PRESETS).map(([id,p])=>'<button class="preset" data-preset="'+esc(id)+'"><div class="t">'+esc(p.label)+'</div><div class="d">'+esc(p.description)+'</div></button>').join('');
+  const batchBtn='<div class="preset batch" data-preset="'+BATCH.id+'" role="button" tabindex="0"><div class="t">'+esc(BATCH.label)+'</div><div class="d">'+esc(BATCH.description)+'</div></div>';
+
+  let assessmentCard='';
+  if(demoState.lastResult){assessmentCard='<section class="card"><h2>Assessment '+(demoState.lastResult.reused?'<span class="muted">(reused run)</span>':'')+'</h2>'+renderAssessment(demoState.lastResult,demoState.lastBefore)+'</section>';}
+
+  return '<h1>Simulate a purchase attempt</h1>'+
+    '<p class="sub">Submit a preset attempt and watch Visa\'s assessment and the agent\'s rating update. <span class="muted">Simulated reporting date: '+fmt(SIMULATED_NOW)+'</span></p>'+
+    '<section class="card"><div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap"><div style="flex:1;min-width:220px"><label class="label" style="font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Agent version</label><select id="release-select">'+opts+'</select></div><button class="btn ghost" id="reset-btn">Reset demo</button><a class="btn secondary" href="#/">Back to comparison</a></div>'+(demoState.flash?'<div class="'+demoState.flash.cls+'">'+esc(demoState.flash.msg)+'</div>':'')+'</section>'+
+    '<section class="card"><h2>Felicia\'s approved conditions</h2><div class="brief-grid">'+brief('Event',m.eventName)+brief('Performance',m.performanceDay+' · '+m.performanceDate)+brief('Seat type',m.seatType)+brief('Quantity',m.quantity+' tickets')+brief('Budget cap',money(m.capPence))+brief('Scope',SCOPE)+'</div></section>'+
+    '<section class="card"><h2>Current rating '+curBadge+'</h2>'+current+'</section>'+
+    '<section class="card"><h2>Submit a preset</h2><div class="preset-grid">'+presetBtns+'</div><div style="margin-top:14px">'+batchBtn+'</div></section>'+
+    assessmentCard;
+}
+function renderAssessment(result,before){
+  const tables=result.assessments.map((a,i)=>assessTable(a,result.assessments.length>1?i+1:null)).join('');
+  const after=result.rating;
+  const scoreTxt=s=>s&&s.overallScore!==null?twoDp(s.overallScore):'Not yet rated';
+  const bpct=(s,m)=>s&&s.overallScore!==null?pct(s[m].adherence):'—';
+  const delta='<h3>Rating before → after</h3><table class="compare"><tr><th>Metric</th><th>Before</th><th>After</th></tr>'+
+    '<tr><td>Overall score</td><td>'+scoreTxt(before)+'</td><td>'+(after.overallScore!==null?twoDp(after.overallScore):'Not yet rated')+'</td></tr>'+
+    '<tr><td>Budget adherence</td><td>'+bpct(before,'budget')+'</td><td>'+pct(after.budget.adherence)+'</td></tr>'+
+    '<tr><td>Intent adherence</td><td>'+bpct(before,'intent')+'</td><td>'+pct(after.intent.adherence)+'</td></tr>'+
+    '<tr><td>Intent assessed</td><td>'+(before?before.intent.assessed:0)+'</td><td>'+after.intent.assessed+'</td></tr></table>'+
+    '<p class="muted" style="margin-top:8px">Active badge: '+(result.activeBadgeId?'<a href="#/verify/'+esc(result.activeBadgeId)+'">'+esc(result.activeBadgeStatus||'badge')+'</a>':'none (any previous badge for this version is now revoked or superseded)')+'</p>';
+  return tables+delta;
+}
+function assessTable(a,idx){
+  const o=a.observed,ap=a.approved;
+  const cell=(av,ov)=>{
+    const missing=ov===null||ov===undefined;
+    const mism=!missing&&String(ov)!==String(av);
+    return '<td>'+esc(av)+'</td><td'+(mism?' class="mismatch"':'')+'>'+(missing?'<span class="muted">unavailable</span>':esc(ov))+'</td>';
+  };
+  return (idx?'<h3>Attempt '+idx+'</h3>':'')+
+    '<table class="compare"><tr><th>Criterion</th><th>Approved</th><th>Observed</th></tr>'+
+    '<tr><td>Event</td>'+cell(ap.eventId,o.eventId)+'</tr>'+
+    '<tr><td>Date</td>'+cell(ap.date,o.date)+'</tr>'+
+    '<tr><td>Seat type</td>'+cell(ap.seatType,o.seatType)+'</tr>'+
+    '<tr><td>Quantity</td>'+cell(ap.quantity,o.quantity)+'</tr>'+
+    '<tr><td>Total (incl. fees)</td><td>≤ '+esc(ap.cap)+'</td><td>'+(o.total===null?'<span class="muted">unavailable</span>':esc(o.total))+'</td></tr></table>'+
+    '<div class="statusline"><span class="pill '+esc(a.paymentStatus)+'">Payment: '+esc(a.paymentStatus)+'</span><span class="pill '+esc(a.orderStatus)+'">Order: '+esc(a.orderStatus)+'</span><span class="pill">Evidence: '+esc(a.evidenceSource)+'</span></div>'+
+    '<div class="statusline"><span>Budget: <span class="verdict '+esc(a.budgetVerdict)+'">'+esc(a.budgetVerdict)+'</span> <span class="reasons"><code>'+esc(a.budgetReason)+'</code></span></span></div>'+
+    '<div class="statusline"><span>Instruction adherence: <span class="verdict '+esc(a.intentVerdict)+'">'+esc(a.intentVerdict)+'</span> <span class="reasons">'+a.intentReasons.map(r=>'<code>'+esc(r)+'</code>').join(' ')+'</span></span></div>';
+}
+
+function viewVerify(badgeId){
+  const res=resolveBadge(badgeId);
+  if(!res)return '<h1>Badge verification</h1><section class="card"><div class="error">No badge found for ID <code>'+esc(badgeId)+'</code>.</div></section>';
+  const b=res.badge;const rel=RELEASES.find(r=>r.releaseId===b.releaseId);
+  const clsMap={active:'active',revoked:'revoked',expired:'expired',superseded:'superseded'};
+  const verified=res.isVisaVerified?'<div class="badge-chip">● Visa Verified — valid for the current rating snapshot</div>':'<p class="muted">This badge is not currently a valid active proof for the agent\'s current rating.</p>';
+  return '<h1>Badge verification</h1><p class="sub">Confirm a badge applies to this agent version and is still valid. <span class="muted">Simulated date: '+fmt(SIMULATED_NOW)+'</span></p>'+
+    '<section class="card"><div class="big-status '+(clsMap[res.effectiveStatus]||'unavailable')+'">'+esc(res.statusLabel)+'</div>'+verified+
+    '<div class="kv">'+
+      '<span class="k">Agent version</span><span class="v">'+esc(rel.agentName)+' v'+esc(rel.version)+'</span>'+
+      '<span class="k">Scope</span><span class="v">'+esc(b.scope)+'</span>'+
+      '<span class="k">Score snapshot</span><span class="v">'+twoDp(b.scoreSnapshot)+' / 100</span>'+
+      '<span class="k">Snapshot ID</span><span class="v">'+esc(b.snapshotId)+'</span>'+
+      '<span class="k">Issued</span><span class="v">'+fmt(b.issuedAt)+'</span>'+
+      '<span class="k">Expires</span><span class="v">'+fmt(b.expiresAt)+'</span>'+
+      '<span class="k">Proof</span><span class="v">Simulated ES256 JWS (prototype)</span>'+
+    '</div>'+
+    '<details class="proof" style="margin-top:16px"><summary>Show simulated proof &amp; claims</summary><p class="muted" style="margin-top:8px">This is a mock proof for demonstration — a production badge would carry a real ES256 signature verifiable against a public key.</p><pre>'+esc(b.proof)+'</pre><pre>'+esc(JSON.stringify(b.claims,null,2))+'</pre></details>'+
+    '<div class="actions" style="margin-top:16px"><a class="btn secondary" href="#/">Back to comparison</a><a class="btn ghost" href="#/demo?release='+esc(b.releaseId)+'">Open simulation</a></div></section>';
+}
+
+/* =====================================================================
+   ROUTER + EVENTS
+   ===================================================================== */
+function parseHash(){
+  const raw=(location.hash||'#/').slice(1);
+  const [path,query]=raw.split('?');
+  return{path,params:new URLSearchParams(query||'')};
+}
+function render(){
+  const {path,params}=parseHash();
+  const app=document.getElementById('app');
+  document.querySelectorAll('[data-nav]').forEach(a=>a.classList.toggle('active',a.getAttribute('data-nav')===(path.startsWith('/demo')?'/demo':'/')));
+  if(path.startsWith('/verify/')){app.innerHTML=viewVerify(decodeURIComponent(path.slice('/verify/'.length)));return;}
+  if(path.startsWith('/demo')){app.innerHTML=viewDemo(params);wireDemo();return;}
+  app.innerHTML=viewCompare();
+}
+function wireDemo(){
+  const sel=document.getElementById('release-select');
+  sel.addEventListener('change',()=>{demoState.releaseId=sel.value;demoState.lastResult=null;demoState.flash=null;render();});
+  document.getElementById('reset-btn').addEventListener('click',()=>{reset();demoState.runCounter={};demoState.lastResult=null;demoState.flash={cls:'flash',msg:'Demo reset to seed state.'};render();});
+  document.querySelectorAll('[data-preset]').forEach(el=>{
+    const run=()=>doPreset(el.getAttribute('data-preset'));
+    el.addEventListener('click',run);
+    el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();run();}});
+  });
+}
+function doPreset(preset){
+  const rid=demoState.releaseId;
+  const before=store.currentSnapshot.get(rid)||null;
+  const key=rid+'::'+preset;
+  if(!demoState.runCounter[key])demoState.runCounter[key]=key+'::'+Date.now();
+  const runId=demoState.runCounter[key];
+  try{
+    const result=submitRun(runId,rid,preset);
+    demoState.lastResult=result;demoState.lastBefore=before;
+    demoState.flash=result.reused?{cls:'flash',msg:'This action was retried with the same inputs — existing records reused.'}:null;
+  }catch(e){
+    demoState.lastResult=null;
+    demoState.flash={cls:'error',msg:(e.status===409?'Run ID conflict (409): same run ID reused with different inputs. Previous published state preserved.':'Submission failed: '+e.message+'. Previous state preserved.')};
+  }
+  render();
+}
+
+window.addEventListener('hashchange',render);
+reset();
+render();
+</script>
+</body>
+</html>
